@@ -1,12 +1,15 @@
+name: n8n-with-evolution_api
+
 services:
   
   api:
     container_name: evolution_api
-    image: evoapicloud/evolution-api:latest
+    image: n8nio/n8n:latest
     restart: always
     depends_on:
       - redis
       - postgres
+      - n8n
     ports:
       - 8080:8080
     volumes:
@@ -51,8 +54,39 @@ services:
       - POSTGRES_PASSWORD=YQFNhfuRUlRgtuaulQQHqnCNUnKAeeNa
       - POSTGRES_DB=railway
       - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_MULTIPLE_DATABASES=railway,n8n_db
     volumes:
     - postgres_data:/var/lib/postgresql/data
+
+  n8n:
+    container_name: n8n
+    image: n8nio/n8n:latest
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - 5678:5678
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_db
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=YQFNhfuRUlRgtuaulQQHqnCNUnKAeeNa
+      - N8N_ENCRYPTION_KEY=your-encryption-key-here
+      - EXECUTIONS_PROCESS=main
+      - EXECUTIONS_MODE=regular
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - evolution-net
 
   # pgbouncer:
   #   image: edoburu/pgbouncer:latest
@@ -75,6 +109,7 @@ volumes:
   evolution_instances:
   evolution_redis:
   postgres_data:
+  n8n_data:
 
 
 networks:
